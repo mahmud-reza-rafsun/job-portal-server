@@ -46,6 +46,18 @@ async function run() {
             const result = await jobApplicationCollection.insertOne(data);
             res.send(result);
         })
+        app.get('/job-application', async (req, res) => {
+            const email = req.query.email;
+            const query = { applicant_email: email };
+            const result = await jobApplicationCollection.find(query).toArray();
+
+            // fokira way
+            for (const application of result) {
+                console.log(application.jobs_id);
+            }
+
+            res.send(result);
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
