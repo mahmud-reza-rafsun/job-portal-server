@@ -54,11 +54,25 @@ async function run() {
             // fokira way
             for (const application of result) {
                 console.log(application.jobs_id);
+                const query1 = { _id: new ObjectId(application.job_id) }
+                const job = await jobsCollection.findOne(query1);
+                if (job) {
+                    application.title = job.title;
+                    application.location = job.location;
+                    application.company = job.company;
+                    application.company_logo = job.company_logo;
+                    application.category = job.category;
+                }
             }
 
             res.send(result);
         })
-
+        app.delete('/job-application/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await jobApplicationCollection.deleteOne(query);
+            res.send(result);
+        })
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("connected to MongoDB!");
