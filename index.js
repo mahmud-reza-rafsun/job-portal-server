@@ -12,7 +12,6 @@ app.use(express.json());
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster1.ladfrnr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1`;
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
@@ -30,6 +29,13 @@ async function run() {
         const jobApplicationCollection = client.db('jobPortal').collection('job_application');
         // jobs apis
         app.get('/jobs', async (req, res) => {
+
+            const email = req.query.email;
+            let query = {};
+            if (email) {
+                query = { hr_email: email }
+            }
+
             const cursor = jobsCollection.find();
             const result = await cursor.toArray();
             res.send(result);
@@ -41,9 +47,14 @@ async function run() {
             res.send(result);
         })
         // job applications apis
+        app.post('/jobs', async (req, res) => {
+            const data = req.body;
+            const result = await jobsCollection.insertOne(data);
+            res.send(result);
+        })
         app.post('/job-application', async (req, res) => {
             const data = req.body;
-            const result = await jobApplicationCollection.insertOne(data);
+            const result = await jobsCollection.insertOne(data);
             res.send(result);
         })
         app.get('/job-application', async (req, res) => {
