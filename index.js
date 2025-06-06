@@ -36,7 +36,7 @@ async function run() {
                 query = { hr_email: email }
             }
 
-            const cursor = jobsCollection.find();
+            const cursor = jobsCollection.find(query);
             const result = await cursor.toArray();
             res.send(result);
         });
@@ -54,7 +54,7 @@ async function run() {
         })
         app.post('/job-application', async (req, res) => {
             const data = req.body;
-            const result = await jobsCollection.insertOne(data);
+            const result = await jobApplicationCollection.insertOne(data);
             res.send(result);
         })
         app.get('/job-application', async (req, res) => {
