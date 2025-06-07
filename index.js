@@ -2,6 +2,8 @@ require('dotenv').config()
 
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 const app = express();
@@ -9,6 +11,7 @@ const app = express();
 // middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster1.ladfrnr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1`;
@@ -27,6 +30,19 @@ async function run() {
         await client.connect();
         const jobsCollection = client.db('jobPortal').collection('jobs');
         const jobApplicationCollection = client.db('jobPortal').collection('job_application');
+
+        // Auth Related Apis
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1h' });
+            res
+                .cookie('token', token, {
+                    httpOnly: true,
+                    secure: false,
+                })
+                .send({ success: true });
+        })
+
         // jobs apis
         app.get('/jobs', async (req, res) => {
 
@@ -53,8 +69,31 @@ async function run() {
             res.send(result);
         })
         app.post('/job-application', async (req, res) => {
-            const data = req.body;
-            const result = await jobApplicationCollection.insertOne(data);
+            const application = req.body;
+            const result = await jobApplicationCollection.insertOne(application);
+
+            // not the best way {use aggregate}
+            const id = application.job_id;
+            const query = { _id: new ObjectId(id) }
+            const job = await jobsCollection.findOne(query);
+            let newCount = 0;
+            if (job.applicationCount) {
+                newCount = job.applicationCount + 1;
+            }
+            else {
+                newCount = 1;
+            }
+
+            // filter now
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    applicationCount: newCount
+                }
+            }
+
+            const updatedResult = await jobsCollection.updateOne(filter, updatedDoc)
+
             res.send(result);
         })
         app.get('/job-application', async (req, res) => {
